@@ -2,7 +2,7 @@
  * Context Builder
  *
  * Builds rich context for tasks by combining FTS search with graph traversal.
- * Outputs structured context ready to inject into Claude.
+ * Outputs structured context ready to inject into coding agents.
  */
 
 import * as fs from 'fs';
@@ -207,7 +207,7 @@ export class ContextBuilder {
    * 2. Run semantic search to find entry points
    * 3. Expand graph around entry points
    * 4. Extract code blocks for key nodes
-   * 5. Format output for Claude
+   * 5. Format output for an agent
    *
    * @param input - Task description or object with title/description
    * @param options - Build options

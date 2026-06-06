@@ -1008,7 +1008,7 @@ export class CodeGraph {
    * 1. Running FTS search to find entry points
    * 2. Expanding the graph around entry points
    * 3. Extracting code blocks for key nodes
-   * 4. Formatting output for Claude
+   * 4. Formatting output for an agent
    *
    * @param input - Task description (string or {title, description})
    * @param options - Build options (maxNodes, includeCode, format, etc.)

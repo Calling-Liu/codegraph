@@ -1,15 +1,7 @@
 /**
  * Agent target abstraction for the installer.
  *
- * Each MCP-capable agent (Claude Code, Cursor, Codex CLI, opencode, ...)
- * implements this interface so the installer orchestrator can write the
- * right MCP-server config + instructions file + permissions for that
- * agent without baking client-specific paths into core code. Adding a
- * new agent = one new file in `targets/` + one entry in `registry.ts`.
- *
- * Closes the Claude-locked installer issue (upstream #137). The
- * runtime MCP server is already agent-agnostic; this brings the
- * installer to the same surface.
+ * Agent target abstraction for the CodeBuddy-focused installer.
  */
 
 export type Location = 'global' | 'local';
@@ -19,7 +11,7 @@ export type Location = 'global' | 'local';
  * lookup. New targets add a value here when they're added to the
  * registry. Keep these short and lowercase.
  */
-export type TargetId = 'claude' | 'cursor' | 'codex' | 'opencode' | 'hermes' | 'gemini' | 'antigravity' | 'kiro' | 'codebuddy';
+export type TargetId = 'codebuddy';
 
 /**
  * Result of `target.detect(location)`.
@@ -54,18 +46,15 @@ export interface WriteResult {
     action: 'created' | 'updated' | 'unchanged' | 'removed' | 'not-found' | 'kept';
   }>;
   /**
-   * Optional one-line notes the orchestrator surfaces verbatim — e.g.
-   * "Restart Cursor to apply." Keep these short; multi-line goes in
-   * the README.
+   * Optional one-line notes the orchestrator surfaces verbatim. Keep
+   * these short; multi-line guidance belongs in README.md.
    */
   notes?: string[];
 }
 
 export interface InstallOptions {
   /**
-   * Whether to write the agent's permissions / auto-allow surface
-   * (Claude `settings.json`, others where applicable). When the
-   * target has no permissions concept this option is a no-op.
+   * Whether to write the target's permissions / auto-allow surface.
    */
   autoAllow: boolean;
 }
@@ -80,10 +69,8 @@ export interface AgentTarget {
   /**
    * Whether this target supports the given install location.
    *
-   * Some agents (Codex CLI as of 2026-05) have no project-local
-   * config concept — only a single `~/.codex/` dir. Returning false
-   * for an unsupported (target, location) pair lets the orchestrator
-   * skip cleanly with a clear message.
+   * Returning false for an unsupported (target, location) pair lets
+   * the orchestrator skip cleanly with a clear message.
    */
   supportsLocation(loc: Location): boolean;
   detect(loc: Location): DetectionResult;

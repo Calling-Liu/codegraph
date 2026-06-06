@@ -5,7 +5,7 @@
  * walking up parent directories to the nearest one (see
  * `findNearestCodeGraphRoot`). That walk is unaware of git worktrees: when a
  * worktree is created *inside* the main checkout (e.g. some tools place them
- * under `.gitignore`d paths like `.claude/worktrees/<name>/`), a command run
+ * under ignored worktree paths), a command run
  * from the worktree walks up and silently resolves the MAIN checkout's index.
  *
  * Every query then returns results from the main tree's code — usually a

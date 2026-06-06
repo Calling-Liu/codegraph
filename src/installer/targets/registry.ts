@@ -1,32 +1,11 @@
 /**
- * Registry of all known agent targets.
- *
- * Adding a new target = create `targets/<id>.ts` exporting an
- * `AgentTarget`, then add it to the array below. Order here is the
- * order they appear in the multiselect prompt, in `--target=all`,
- * and in `--print-config`'s help listing — keep it stable.
+ * Registry of supported agent targets for this CodeBuddy-focused fork.
  */
 
 import { AgentTarget, Location, TargetId } from './types';
-import { claudeTarget } from './claude';
-import { cursorTarget } from './cursor';
-import { codexTarget } from './codex';
-import { opencodeTarget } from './opencode';
-import { hermesTarget } from './hermes';
-import { geminiTarget } from './gemini';
-import { antigravityTarget } from './antigravity';
-import { kiroTarget } from './kiro';
 import { codeBuddyTarget } from './codebuddy';
 
 export const ALL_TARGETS: readonly AgentTarget[] = Object.freeze([
-  claudeTarget,
-  cursorTarget,
-  codexTarget,
-  opencodeTarget,
-  hermesTarget,
-  geminiTarget,
-  antigravityTarget,
-  kiroTarget,
   codeBuddyTarget,
 ]);
 
@@ -58,9 +37,7 @@ export function detectAll(loc: Location): Array<{
  * Resolve a `--target=` flag value to a list of `AgentTarget`
  * instances. Accepts:
  *
- *   - `auto` — return all targets whose `detect().installed` is true,
- *     or `['claude']` as a fallback if none detected (least-surprise
- *     for existing users).
+ *   - `auto` — return detected targets, or CodeBuddy as the fallback.
  *   - `all` — every target in the registry.
  *   - `none` — empty list (caller skips agent writes entirely).
  *   - csv list — `'claude,cursor'` etc. Unknown ids throw.
@@ -71,7 +48,7 @@ export function resolveTargetFlag(value: string, loc: Location): AgentTarget[] {
   if (value === 'auto') {
     const detected = detectAll(loc).filter(({ detection }) => detection.installed);
     if (detected.length > 0) return detected.map(({ target }) => target);
-    const fallback = getTarget('claude');
+    const fallback = getTarget('codebuddy');
     return fallback ? [fallback] : [];
   }
 

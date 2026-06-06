@@ -42,7 +42,7 @@ async function loadCodeGraph(): Promise<typeof import('../index')> {
     console.error(`\x1b[31m${getGlyphs().err}\x1b[0m Failed to load CodeGraph modules.`);
     console.error(`\n  Node: ${process.version}  Platform: ${process.platform} ${process.arch}`);
     console.error(`\n  Error: ${msg}`);
-    console.error('\n  Try reinstalling with: npm install -g @colbymchenry/codegraph\n');
+    console.error('\n  Try reinstalling this fork with: npm run build && npm install -g .\n');
     process.exit(1);
   }
 }
@@ -1113,7 +1113,7 @@ program
         // Use stderr so stdout stays clean for any piped/stdio usage.
         console.error(chalk.bold('\nCodeGraph MCP Server\n'));
         console.error(chalk.blue(getGlyphs().info) + ' Use --mcp flag to start the MCP server');
-        console.error('\nTo use with Claude Code, add to your MCP configuration:');
+        console.error('\nTo use with CodeBuddy, add to your MCP configuration:');
         console.error(chalk.dim(`
 {
   "mcpServers": {
@@ -1571,11 +1571,11 @@ program
  */
 program
   .command('install')
-  .description('Install codegraph MCP server into one or more agents (Claude Code, Cursor, Codex CLI, opencode, Hermes Agent, CodeBuddy)')
+  .description('Install the codegraph MCP server into CodeBuddy')
   .option('-t, --target <ids>', 'Target agent(s): comma-separated ids, or "auto"|"all"|"none". Default: prompt')
   .option('-l, --location <where>', 'Install location: "global" or "local". Default: prompt')
   .option('-y, --yes', 'Non-interactive: defaults to --location=global --target=auto, auto-allow on')
-  .option('--no-permissions', 'Skip writing the auto-allow permissions list (Claude Code only)')
+  .option('--no-permissions', 'Skip writing the CodeBuddy auto-allow permission')
   .option('--print-config <id>', 'Print MCP config snippet for the named agent and exit (no file writes)')
   .action(async (opts: {
     target?: string;
@@ -1638,7 +1638,7 @@ program
  */
 program
   .command('uninstall')
-  .description('Remove codegraph from your agents (Claude Code, Cursor, Codex CLI, opencode, Hermes Agent, CodeBuddy)')
+  .description('Remove codegraph from CodeBuddy')
   .option('-t, --target <ids>', 'Target agent(s): comma-separated ids, or "all". Default: all')
   .option('-l, --location <where>', 'Uninstall location: "global" or "local". Default: prompt')
   .option('-y, --yes', 'Non-interactive: defaults to --location=global --target=all')

@@ -12,9 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * The MCP-server config block codegraph injects. Same shape across
- * all JSON-shaped agent configs (Claude, Cursor, opencode), only the
- * surrounding wrapper differs. Codex (TOML) builds its own block.
+ * The MCP-server config block CodeBuddy uses for codegraph.
  */
 export function getMcpServerConfig(): { type: string; command: string; args: string[] } {
   return {
@@ -25,9 +23,9 @@ export function getMcpServerConfig(): { type: string; command: string; args: str
 }
 
 /**
- * Permissions list for Claude `settings.json`. Other targets that
- * have a permissions concept can compose this list directly. The
- * permission strings follow Claude's `mcp__<server>__<tool>` format.
+ * Full CodeGraph MCP permissions list. CodeBuddy currently accepts a
+ * server-level `mcp__codegraph` allow entry, but these tool-level
+ * strings are kept for config formats that need explicit tools.
  */
 export function getCodeGraphPermissions(): string[] {
   return [
@@ -124,9 +122,8 @@ export function jsonDeepEqual(a: unknown, b: unknown): boolean {
 /**
  * Replace or append a marker-delimited section in a markdown-ish file.
  *
- * Used by Claude / Codex for the `<!-- CODEGRAPH_START --> ... <!--
- * CODEGRAPH_END -->` block. Preserves all content outside the
- * markers verbatim.
+ * Preserves all content outside the markers verbatim. Kept as a small
+ * utility in case a future CodeBuddy config surface needs marked text.
  *
  * Returns `created` when the file didn't exist; `updated` when
  * markers were found and content swapped; `appended` when markers
@@ -170,8 +167,7 @@ export function replaceOrAppendMarkedSection(
 /**
  * Inverse of `replaceOrAppendMarkedSection`. Strips the marker
  * block from `filePath` if present. If the file becomes empty after
- * removal, deletes the file entirely (matches the existing Claude
- * uninstall behavior).
+ * removal, deletes the file entirely.
  *
  * Returns `removed` when content was stripped, `not-found` when
  * the markers weren't present, `kept` when the file didn't exist.

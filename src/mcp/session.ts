@@ -9,7 +9,7 @@
  *
  * The state-machine itself mirrors what `MCPServer` used to do inline before
  * issue #411 split it out — the same regression tests in
- * `__tests__/mcp-initialize.test.ts` still drive this code path.
+ * MCP initialize smoke checks drive this code path.
  */
 
 import * as path from 'path';
@@ -133,7 +133,7 @@ export class MCPSession {
         if (isRequest) this.transport.sendResult((message as JsonRpcRequest).id, {});
         break;
       case 'resources/list':
-        // We expose no MCP resources, but some clients (opencode, Codex) probe
+        // We expose no MCP resources, but some clients probe
         // for them on connect; reply with an empty list instead of a
         // MethodNotFound error that surfaces as a scary `-32601` log line. (#621)
         if (isRequest) this.transport.sendResult((message as JsonRpcRequest).id, { resources: [] });

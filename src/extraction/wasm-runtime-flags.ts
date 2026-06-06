@@ -23,7 +23,7 @@
  * prevent the crash — only disabling the optimizing tier entirely does.
  *
  * Delivery: the bundled launcher passes the flag directly (see
- * scripts/build-bundle.sh and scripts/npm-shim.js); for any other launch path
+ * the bundled runtime launcher); for any other launch path
  * (running dist directly, from source, etc.) the CLI re-execs itself once with
  * the flag via {@link relaunchWithWasmRuntimeFlagsIfNeeded}. V8 flags are
  * PROCESS-global, and the parse worker is created with default (inherited)

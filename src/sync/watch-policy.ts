@@ -7,7 +7,7 @@
  * drives (NTFS exposed over the 9p/drvfs bridge): setting up the recursive
  * watch walks the directory tree, and every readdir/stat crosses the
  * Windows boundary. Inside an MCP server this stalls the event loop during
- * startup long enough to blow past host handshake timeouts (opencode's 30s),
+ * startup long enough to blow past host handshake timeouts,
  * so the tools never appear. See issue #199.
  *
  * This module centralizes the on/off decision so the watcher, the MCP

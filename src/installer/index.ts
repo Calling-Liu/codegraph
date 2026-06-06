@@ -1,18 +1,14 @@
 /**
  * CodeGraph Interactive Installer
  *
- * Multi-target: writes MCP server config + instructions for the
- * agents the user picks (Claude Code, Cursor, Codex CLI, opencode,
- * Hermes Agent, Gemini CLI, Antigravity IDE).
- * Defaults to the Claude-only behavior for backwards compatibility
- * when no targets are explicitly chosen and nothing else is detected.
+ * CodeBuddy-focused installer. Writes the CodeGraph MCP server config
+ * to CodeBuddy's global or project-local MCP config.
  *
  * Uses @clack/prompts for the interactive UI; `runInstallerWithOptions`
  * is the non-interactive entry point used by the `--target` /
  * `--print-config` CLI flags.
  */
 
-import { execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
@@ -28,17 +24,6 @@ import { getGlyphs } from '../ui/glyphs';
 // installer must stay importable even when native modules can't load).
 import { watchDisabledReason } from '../sync/watch-policy';
 import { isGitRepo, isSyncHookInstalled, installGitSyncHook } from '../sync/git-hooks';
-
-// Backwards-compat: keep these named exports — downstream code may
-// import them. The shim in `config-writer.ts` continues to re-export
-// them too.
-export {
-  writeMcpConfig,
-  writePermissions,
-  hasMcpConfig,
-  hasPermissions,
-} from './config-writer';
-export type { InstallLocation } from './config-writer';
 
 // Dynamic import helper — tsc compiles import() to require() in CJS mode,
 // which fails for ESM-only packages. This bypasses the transformation.
@@ -102,29 +87,21 @@ export async function runInstallerWithOptions(opts: RunInstallerOptions): Promis
     return;
   }
 
-  // Step 2: install the codegraph npm package on PATH (always offered;
-  // matches existing behavior). Skipped when --yes (assume present).
+  // Step 2: confirm the CLI is on PATH. This fork is installed from the
+  // checked-out branch with `npm install -g .`; do not install upstream here.
   if (!useDefaults) {
-    const shouldInstallGlobally = await clack.confirm({
-      message: 'Install the codegraph CLI on your PATH? (Required so agents can launch the MCP server)',
+    const cliReady = await clack.confirm({
+      message: 'Have you already run `npm run build && npm install -g .` for this branch?',
       initialValue: true,
     });
-    if (clack.isCancel(shouldInstallGlobally)) {
+    if (clack.isCancel(cliReady)) {
       clack.cancel('Installation cancelled.');
       process.exit(0);
     }
-    if (shouldInstallGlobally) {
-      const s = clack.spinner();
-      s.start('Installing codegraph CLI...');
-      try {
-        execSync('npm install -g @colbymchenry/codegraph', { stdio: 'pipe', windowsHide: true });
-        s.stop('Installed codegraph CLI on PATH');
-      } catch {
-        s.stop('Could not install (permission denied)');
-        clack.log.warn('Try: sudo npm install -g @colbymchenry/codegraph');
-      }
-    } else {
-      clack.log.info('Skipped CLI install — agents will not be able to launch the MCP server without it');
+    if (!cliReady) {
+      clack.log.info('Run `npm run build && npm install -g .`, then run this installer again.');
+      clack.outro('No files changed.');
+      return;
     }
   }
 
@@ -146,8 +123,8 @@ export async function runInstallerWithOptions(opts: RunInstallerOptions): Promis
       const sel = await clack.select({
         message: 'Apply agent configs to all your projects, or just this one?',
         options: [
-          { value: 'global' as const, label: 'All projects', hint: '~/.claude, ~/.cursor, etc.' },
-          { value: 'local'  as const, label: 'Just this project', hint: './.claude, ./.cursor, etc.' },
+          { value: 'global' as const, label: 'All projects', hint: '~/.codebuddy/mcp.json' },
+          { value: 'local'  as const, label: 'Just this project', hint: './.mcp.json' },
         ],
         initialValue: 'global' as const,
       });
@@ -159,16 +136,15 @@ export async function runInstallerWithOptions(opts: RunInstallerOptions): Promis
     }
   }
 
-  // Step 4: auto-allow permissions (only meaningful for Claude;
-  // skipped silently by other targets).
+  // Step 4: CodeBuddy permissions.
   let autoAllow: boolean;
   if (opts.autoAllow !== undefined) {
     autoAllow = opts.autoAllow;
   } else if (useDefaults) {
     autoAllow = true;
-  } else if (targets.some((t) => t.id === 'claude')) {
+  } else if (targets.some((t) => t.id === 'codebuddy')) {
     const ans = await clack.confirm({
-      message: 'Auto-allow CodeGraph commands? (Skips permission prompts in Claude Code)',
+      message: 'Auto-allow the CodeGraph MCP server in CodeBuddy?',
       initialValue: true,
     });
     if (clack.isCancel(ans)) {
@@ -220,9 +196,7 @@ export async function runInstallerWithOptions(opts: RunInstallerOptions): Promis
 export interface RunUninstallerOptions {
   /**
    * Comma-separated target list, or `auto` / `all` / `none`. Defaults
-   * to `all` — uninstall sweeps every known agent and reports which
-   * ones it actually touched, so the user doesn't have to know where
-   * they configured it.
+   * to `all` — this fork only registers CodeBuddy.
    */
   target?: string;
   /** Skip the location prompt; use this value directly. */
@@ -237,8 +211,7 @@ export type UninstallStatus = 'removed' | 'not-configured' | 'unsupported';
  * Per-target outcome of an uninstall sweep. `removed` means we deleted
  * at least one thing; `not-configured` means the agent had no codegraph
  * config at this location (nothing to do); `unsupported` means the
- * agent has no config concept for this location (e.g. Codex is
- * global-only, so a `local` uninstall skips it).
+ * agent has no config concept for this location.
  */
 export interface UninstallReport {
   id: TargetId;
@@ -306,8 +279,8 @@ export async function runUninstaller(opts: RunUninstallerOptions): Promise<void>
   const useDefaults = opts.yes === true;
 
   // Step 1: which location — asked FIRST, the one decision the user
-  // must make. Global sweeps ~/.claude, ~/.codex, etc.; local sweeps
-  // the configs in this project directory.
+  // must make. Global sweeps ~/.codebuddy/mcp.json; local sweeps the
+  // .mcp.json in this project directory.
   let location: Location;
   if (opts.location) {
     location = opts.location;
@@ -317,8 +290,8 @@ export async function runUninstaller(opts: RunUninstallerOptions): Promise<void>
     const sel = await clack.select({
       message: 'Remove CodeGraph from all your projects, or just this one?',
       options: [
-        { value: 'global' as const, label: 'All projects (global)', hint: '~/.claude, ~/.cursor, ~/.codex, ~/.config/opencode, ~/.hermes, ~/.gemini, ~/.kiro' },
-        { value: 'local'  as const, label: 'Just this project (local)', hint: './.claude, ./.cursor, ./opencode.jsonc, ./.gemini, ./.kiro' },
+        { value: 'global' as const, label: 'All projects (global)', hint: '~/.codebuddy/mcp.json' },
+        { value: 'local'  as const, label: 'Just this project (local)', hint: './.mcp.json' },
       ],
       initialValue: 'global' as const,
     });
@@ -409,9 +382,7 @@ async function resolveTargets(
   const initialValues = detected
     .filter(({ detection }) => detection.installed)
     .map(({ target }) => target.id);
-  // If nothing detected, default to Claude alone (matches the
-  // historical default and the smallest-surprise outcome).
-  const initial = initialValues.length > 0 ? initialValues : ['claude'];
+  const initial = initialValues.length > 0 ? initialValues : ['codebuddy'];
 
   const choice = await clack.multiselect<string>({
     message: 'Which agents should CodeGraph configure?',

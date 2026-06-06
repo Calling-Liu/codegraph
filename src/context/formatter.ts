@@ -1,7 +1,7 @@
 /**
  * Context Formatter
  *
- * Formats TaskContext as markdown or JSON for consumption by Claude.
+ * Formats TaskContext as markdown or JSON for consumption by coding agents.
  */
 
 import { Node, Edge, TaskContext, Subgraph } from '../types';
@@ -10,7 +10,7 @@ import { isGeneratedFile } from '../extraction/generated-detection';
 /**
  * Format context as markdown
  *
- * Creates a compact markdown document optimized for Claude with minimal context usage:
+ * Creates a compact markdown document optimized for minimal context usage:
  * - Brief summary
  * - Entry points with locations
  * - Code blocks only for key symbols

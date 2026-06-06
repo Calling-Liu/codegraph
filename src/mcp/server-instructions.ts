@@ -1,8 +1,8 @@
 /**
  * Server-level instructions emitted in the MCP `initialize` response.
  *
- * MCP clients (Claude Code, Cursor, opencode, LangChain, OpenAI Agent
- * SDK, …) surface this text in the agent's system prompt automatically,
+ * MCP clients such as CodeBuddy surface this text in the agent's
+ * system prompt automatically,
  * giving the agent a high-level playbook for the codegraph toolset
  * before it sees individual tool descriptions.
  *
