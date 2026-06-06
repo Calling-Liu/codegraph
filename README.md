@@ -32,16 +32,16 @@ CodeBuddy MCP package.
   `codegraph_callers`, `codegraph_callees`, `codegraph_impact`, and
   `codegraph_files`.
 
-## Install this branch on another computer
+## Install on another computer
 
-Clone this branch:
+Clone this repository:
 
 ```bash
-git clone -b codex/codebuddy-support https://github.com/Calling-Liu/codegraph.git
+git clone https://github.com/Calling-Liu/codegraph.git
 cd codegraph
 ```
 
-Install dependencies, build, and install the CLI:
+Install dependencies, build, and install the CLI on macOS or Linux:
 
 ```bash
 npm install
@@ -56,16 +56,39 @@ which codegraph
 codegraph --version
 ```
 
+Install dependencies, build, and install the CLI on Windows PowerShell:
+
+```powershell
+npm install
+npm run build
+npm install -g . --force
+```
+
+Confirm the command is available on Windows PowerShell:
+
+```powershell
+where.exe codegraph
+codegraph --version
+```
+
 The installed `codegraph` command is a thin launcher. On first run it downloads
-and caches a compatible Node runtime under `~/.codegraph-codebuddy`, then runs
+and caches a compatible Node runtime under `~/.codegraph-codebuddy` on
+macOS/Linux or `%USERPROFILE%\.codegraph-codebuddy` on Windows, then runs
 CodeGraph with that runtime. This avoids failures caused by system Node builds
 whose `node:sqlite` module does not include FTS5.
 
 If your company network cannot access `nodejs.org`, prepare a compatible Node
-manually and point CodeGraph at it:
+manually and point CodeGraph at it on macOS or Linux:
 
 ```bash
 export CODEGRAPH_NODE=/absolute/path/to/node
+codegraph --version
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:CODEGRAPH_NODE = "C:\absolute\path\to\node.exe"
 codegraph --version
 ```
 
@@ -75,6 +98,12 @@ Open a terminal in the project you want CodeBuddy to understand:
 
 ```bash
 cd /absolute/path/to/your/project
+```
+
+On Windows PowerShell:
+
+```powershell
+cd C:\absolute\path\to\your\project
 ```
 
 Install the CodeBuddy MCP config locally:
@@ -229,6 +258,13 @@ Then delete the broken graph for that project and rebuild it:
 
 ```bash
 rm -rf .codegraph
+codegraph init -i
+```
+
+On Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force .codegraph
 codegraph init -i
 ```
 
