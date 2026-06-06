@@ -5,14 +5,25 @@
  */
 
 import type CodeGraph from '../index';
-import { findNearestCodeGraphRoot } from '../directory';
+import { findNearestCodeGraphRoot, isInitialized } from '../directory';
 // Lazy-load the heavy CodeGraph chain off the MCP startup path — see the same
 // helper in engine.ts. ToolHandler must load to answer tools/list (static
 // schemas), but it must NOT drag in sqlite/query layers before the daemon binds;
 // CodeGraph is pulled in only when a tool actually opens a project. require() is
 // sync + cached (CommonJS build).
-const loadCodeGraph = (): typeof import('../index').default =>
-  (require('../index') as typeof import('../index')).default;
+const loadCodeGraph = (): typeof import('../index').default => {
+  const injected = (globalThis as typeof globalThis & {
+    __CODEGRAPH_LOAD_CODEGRAPH_FOR_TESTS__?: () => typeof import('../index').default;
+  }).__CODEGRAPH_LOAD_CODEGRAPH_FOR_TESTS__;
+  if (injected) return injected();
+  try {
+    return (require('../index') as typeof import('../index')).default;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes("Cannot find module '../index'")) throw err;
+    return (require('../index.ts') as typeof import('../index')).default;
+  }
+};
 import {
   detectWorktreeIndexMismatch,
   worktreeMismatchWarning,
@@ -520,6 +531,22 @@ export const tools: ToolDefinition[] = [
     },
   },
   {
+    name: 'codegraph_index',
+    description: 'Initialize, rebuild, or update the CodeGraph knowledge graph for this workspace. Use when the user asks to build, generate, refresh, update, or sync the code knowledge graph/index.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mode: {
+          type: 'string',
+          description: 'Index operation: "init" creates .codegraph if needed and indexes; "sync" incrementally updates; "reindex" clears and rebuilds.',
+          enum: ['init', 'sync', 'reindex'],
+          default: 'sync',
+        },
+        projectPath: projectPathProperty,
+      },
+    },
+  },
+  {
     name: 'codegraph_files',
     description: 'Indexed file tree with language + symbol counts. Faster than Glob for project layout.',
     inputSchema: {
@@ -692,6 +719,7 @@ export class ToolHandler {
       // so it deserves the same gating.
       const TINY_REPO_FILE_THRESHOLD = 500;
       const TINY_REPO_CORE_TOOLS = new Set([
+        'codegraph_index',
         'codegraph_explore',
         'codegraph_search',
         'codegraph_node',
@@ -1036,6 +1064,8 @@ export class ToolHandler {
           // (see handleStatus), so we skip the auto-banner wrapper here to
           // avoid duplicating the same info at the top of the response.
           return await this.handleStatus(args);
+        case 'codegraph_index':
+          return await this.handleIndex(args);
         case 'codegraph_files':
           result = await this.handleFiles(args); break;
         default:
@@ -1051,6 +1081,55 @@ export class ToolHandler {
   /**
    * Handle codegraph_search
    */
+  private async handleIndex(args: Record<string, unknown>): Promise<ToolResult> {
+    const mode = typeof args.mode === 'string' ? args.mode : 'sync';
+    if (!['init', 'sync', 'reindex'].includes(mode)) {
+      return this.errorResult('mode must be one of: init, sync, reindex');
+    }
+
+    const explicitProjectPath = args.projectPath as string | undefined;
+    const projectPath = explicitProjectPath
+      ?? this.cg?.getProjectRoot()
+      ?? this.defaultProjectHint
+      ?? process.cwd();
+    const root = findNearestCodeGraphRoot(projectPath) ?? projectPath;
+
+    if (!isInitialized(root)) {
+      const cg = await loadCodeGraph().init(root, { index: true });
+      if (!this.cg || !explicitProjectPath) this.cg = cg;
+      const stats = cg.getStats();
+      return this.textResult(
+        `Initialized and indexed CodeGraph in ${cg.getProjectRoot()}.\n` +
+        `${stats.fileCount.toLocaleString()} files, ${stats.nodeCount.toLocaleString()} nodes, ${stats.edgeCount.toLocaleString()} edges.`
+      );
+    }
+
+    const cg = this.getCodeGraph(root);
+    if (mode === 'reindex') {
+      cg.clear();
+      const result = await cg.indexAll();
+      const stats = cg.getStats();
+      return this.textResult(
+        `Rebuilt CodeGraph index in ${cg.getProjectRoot()}.\n` +
+        `${result.filesIndexed.toLocaleString()} files indexed, ${result.filesErrored.toLocaleString()} errors.\n` +
+        `${stats.nodeCount.toLocaleString()} nodes, ${stats.edgeCount.toLocaleString()} edges.`
+      );
+    }
+
+    const result = mode === 'init'
+      ? await cg.indexAll()
+      : await cg.sync();
+    const stats = cg.getStats();
+    const changed = 'filesIndexed' in result
+      ? `${result.filesIndexed.toLocaleString()} files indexed, ${result.filesErrored.toLocaleString()} errors`
+      : `${(result.filesAdded + result.filesModified + result.filesRemoved).toLocaleString()} files changed (${result.filesAdded} added, ${result.filesModified} modified, ${result.filesRemoved} removed)`;
+    return this.textResult(
+      `Updated CodeGraph index in ${cg.getProjectRoot()}.\n` +
+      `${changed}.\n` +
+      `${stats.fileCount.toLocaleString()} files, ${stats.nodeCount.toLocaleString()} nodes, ${stats.edgeCount.toLocaleString()} edges.`
+    );
+  }
+
   private async handleSearch(args: Record<string, unknown>): Promise<ToolResult> {
     const query = this.validateString(args.query, 'query');
     if (typeof query !== 'string') return query;

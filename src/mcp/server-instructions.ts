@@ -45,6 +45,7 @@ typically one to a few calls; a grep/read exploration is dozens.
 - **One specific symbol's full source (esp. a body \`codegraph_explore\` trimmed), or an OVERLOADED name** → \`codegraph_node\` (with \`includeCode\`): for an ambiguous name it returns EVERY matching definition's body in one call, so you never Read a file to find the right overload
 - **"What's in directory X?"** → \`codegraph_files\`
 - **"Is the index ready / what's its size?"** → \`codegraph_status\`
+- **"Generate/update/rebuild the knowledge graph/index"** → \`codegraph_index\`
 
 ## Common chains
 
@@ -63,7 +64,7 @@ typically one to a few calls; a grep/read exploration is dozens.
 
 ## Limitations
 
-- If a tool reports the project isn't initialized, \`.codegraph/\` doesn't exist yet — offer to run \`codegraph init -i\` to build the index.
+- If a tool reports the project isn't initialized, \`.codegraph/\` doesn't exist yet — call \`codegraph_index\` with \`mode="init"\` to build the index when the user asks you to generate or update the knowledge graph.
 - Index lags file writes by ~1 second.
 - Cross-file resolution is best-effort name matching; ambiguous calls may return multiple candidates.
 - No live correctness validation — that's still the TypeScript compiler / test suite / linter's job. Codegraph supplements those with structural context they don't have.

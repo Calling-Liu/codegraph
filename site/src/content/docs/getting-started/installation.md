@@ -11,11 +11,11 @@ npx @colbymchenry/codegraph
 
 The installer will:
 
-- Ask which agent(s) to configure — auto-detecting installed ones from **Claude Code**, **Cursor**, **Codex CLI**, **opencode**, **Hermes Agent**, **Gemini CLI**, **Antigravity IDE**, and **Kiro**.
+- Ask which agent(s) to configure — auto-detecting installed ones from **Claude Code**, **Cursor**, **Codex CLI**, **opencode**, **Hermes Agent**, **Gemini CLI**, **Antigravity IDE**, **Kiro**, and **CodeBuddy**.
 - Prompt to install `codegraph` on your `PATH` (so agents can launch the MCP server).
 - Ask whether configs apply to all your projects or just this one.
-- Write each chosen agent's MCP server config plus an instructions file (e.g. `CLAUDE.md`, `.cursor/rules/codegraph.mdc`, `~/.codex/AGENTS.md`).
-- Set up auto-allow permissions when Claude Code is one of the targets.
+- Write each chosen agent's MCP server config. The usage guide is delivered by the MCP server itself during `initialize`.
+- Set up auto-allow permissions when the target supports them.
 - Initialize your current project (local installs only).
 
 ## Non-interactive (scripting / CI)
@@ -37,7 +37,15 @@ codegraph install --print-config codex               # print snippet, no file wr
 
 ## 2. Restart your agent
 
-Restart your agent (Claude Code / Cursor / Codex CLI / opencode / Hermes Agent / Gemini CLI / Antigravity IDE / Kiro) for the MCP server to load.
+Restart your agent (Claude Code / Cursor / Codex CLI / opencode / Hermes Agent / Gemini CLI / Antigravity IDE / Kiro / CodeBuddy) for the MCP server to load.
+
+For CodeBuddy in VS Code, Android Studio, or CodeBuddy IDE, prefer a project-local install:
+
+```bash
+codegraph install --target=codebuddy --location=local
+```
+
+This writes `.mcp.json` with an explicit `--path` so the IDE plugin starts CodeGraph against the current workspace.
 
 ## 3. Initialize projects
 
