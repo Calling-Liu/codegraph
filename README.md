@@ -46,13 +46,26 @@ Install dependencies, build, and install the CLI:
 ```bash
 npm install
 npm run build
-npm install -g .
+npm install -g . --force
 ```
 
 Confirm the command is available:
 
 ```bash
 which codegraph
+codegraph --version
+```
+
+The installed `codegraph` command is a thin launcher. On first run it downloads
+and caches a compatible Node runtime under `~/.codegraph-codebuddy`, then runs
+CodeGraph with that runtime. This avoids failures caused by system Node builds
+whose `node:sqlite` module does not include FTS5.
+
+If your company network cannot access `nodejs.org`, prepare a compatible Node
+manually and point CodeGraph at it:
+
+```bash
+export CODEGRAPH_NODE=/absolute/path/to/node
 codegraph --version
 ```
 
@@ -203,16 +216,23 @@ Or ask CodeBuddy:
 
 ### `no such module: fts5`
 
-The local Node runtime does not have SQLite FTS5 support. Use a Node build that
-includes `node:sqlite` with FTS5, or run a self-contained CodeGraph runtime when
-one is available.
-
-For this branch, the basic install path is:
+This means an old install is still launching CodeGraph with the system Node
+instead of this fork's launcher. Reinstall the current branch globally:
 
 ```bash
 npm run build
-npm install -g .
+npm install -g . --force
+codegraph --version
 ```
+
+Then delete the broken graph for that project and rebuild it:
+
+```bash
+rm -rf .codegraph
+codegraph init -i
+```
+
+After reinstalling this branch, new users should not need this repair step.
 
 ### CodeBuddy still does not call CodeGraph
 

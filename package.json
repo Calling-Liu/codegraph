@@ -5,10 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "codegraph": "./dist/bin/codegraph.js"
+    "codegraph": "./scripts/codegraph-shim.js"
   },
   "files": [
     "dist",
+    "scripts/codegraph-shim.js",
     "README.md",
     "LICENSE"
   ],
